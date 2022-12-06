@@ -71,22 +71,23 @@ fn naloga2(path: &str) -> i32 {
 
 fn naloga3(path: &str) -> usize {
     let mut sum: usize = 0;
+    let mut lines = [HashSet::<u8>::new(), HashSet::<u8>::new(), HashSet::<u8>::new()];
     
-    for line in get_reader(path).lines() {
-        let mut items = line.unwrap().into_bytes();
+    for (i, line) in get_reader(path).lines().enumerate() {
+        let items = line.unwrap().into_bytes();
         let len = items.len();
         if len == 0 { continue }
 
-        let (first_half, second_half) = items.split_at_mut(len / 2);
+        lines[i % 3].clear();
+        lines[i % 3].extend(items.iter());
 
-        let a = HashSet::<&u8>::from_iter(first_half.iter());
-        let b = HashSet::<&u8>::from_iter(second_half.iter());
-
-        let char = **a.intersection(&b).next().unwrap() as u8;
-        sum += match char.is_ascii_uppercase() {
-            false => char as usize - 'a' as usize + 1,
-            true  => char as usize - 'A' as usize + 27,
-        };
+        if i % 3 == 2 {
+            let char = *(&(&lines[0] & &lines[1]) & &lines[2]).iter().next().unwrap() as u8;
+            sum += match char.is_ascii_uppercase() {
+                false => char - 'a' as u8 + 1,
+                true  => char - 'A' as u8 + 27,
+            } as usize;
+        }
     }
     
     return sum;
