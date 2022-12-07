@@ -152,9 +152,12 @@ fn naloga5(path: &str) -> String {
         }
     }
 
-    let move_crate = &mut |from: usize, to: usize| {
-        let c = crates[from - 1].pop().unwrap();
-        crates[to - 1].push(c);
+    let move_crates = &mut |from: usize, to: usize, count: usize| {
+        let i = crates[from - 1].len() - count;
+        for _ in 0..count {
+            let c = crates[from - 1].remove(i);
+            crates[to - 1].push(c);
+        }
     };
 
     loop {
@@ -170,9 +173,7 @@ fn naloga5(path: &str) -> String {
             .collect();
 
         if let [count, from, to] = instructions.as_slice() {
-            for _ in 0..*count {
-                move_crate(*from, *to);
-            }
+            move_crates(*from, *to, *count);
         }
     }
 
