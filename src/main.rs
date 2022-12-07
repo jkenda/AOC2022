@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 fn main() {
     println!("1:\n{}\n", naloga1("input1.txt"));
@@ -8,6 +8,7 @@ fn main() {
     println!("3:\n{}\n", naloga3("input3.txt"));
     println!("4:\n{}\n", naloga4("input4.txt"));
     println!("5:\n{}\n", naloga5("input5.txt"));
+    println!("6:\n{}\n", naloga6("input6.txt"));
 }
 
 fn naloga1(path: &str) -> i32 {
@@ -183,6 +184,20 @@ fn naloga5(path: &str) -> String {
     }
 
     return top;
+}
+
+fn naloga6(path: &str) -> usize {
+    let mut buffer: Vec<u8> = Vec::new();
+    get_reader(path).read_to_end(&mut buffer).unwrap();
+    for i in 3..buffer.len() {
+        let (a, b, c, d) = (buffer[i - 3], buffer[i - 2], buffer[i - 1], buffer[i - 0]);
+        if a != b && a != c && a != d &&
+           b != c && b != d &&
+           c != d {
+               return i + 1;
+           }
+    }
+    return 0;
 }
 
 fn get_reader(path: &str) -> BufReader<File> {
