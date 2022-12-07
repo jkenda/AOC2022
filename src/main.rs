@@ -6,6 +6,8 @@ fn main() {
     println!("1:\n{}\n", naloga1("input1.txt"));
     println!("2:\n{}\n", naloga2("input2.txt"));
     println!("3:\n{}\n", naloga3("input3.txt"));
+    println!("4:\n{}\n", naloga4("input4.txt"));
+    println!("5:\n{}\n", naloga5("input5.txt"));
 }
 
 fn naloga1(path: &str) -> i32 {
@@ -91,6 +93,95 @@ fn naloga3(path: &str) -> usize {
     }
     
     return sum;
+}
+
+fn naloga4(path: &str) -> usize {
+    let mut sum: usize = 0;
+
+    let overlap = |a: u32, b: u32, c: u32, d: u32| {
+        // partial overlap
+        if a <= c && b <= d && b >= c { return true };
+        if c <= a && d <= b && d >= a { return true };
+
+        // complete overlap
+        if a <= c && b >= d { return true };
+        if c <= a && d >= b { return true };
+
+        // no overlap
+        return false;
+    };
+
+    for line in get_reader(path).lines() {
+        let line = line.unwrap();
+        if line.len() == 0 { break }
+
+        let sections = line.split(|c| c == ',' || c == '-').collect::<Vec<&str>>();
+        let (first_start, first_end, second_start, second_end) = (sections[0].parse::<u32>().unwrap(), 
+                                                                  sections[1].parse::<u32>().unwrap(), 
+                                                                  sections[2].parse::<u32>().unwrap(), 
+                                                                  sections[3].parse::<u32>().unwrap());
+
+        sum += if overlap(first_start, first_end, second_start, second_end) { 1 } else { 0 };
+    }
+
+    return sum;
+}
+
+fn naloga5(path: &str) -> String {
+    let mut lines = get_reader(path).lines();
+    let line1: Vec<char> = lines.next().unwrap().unwrap().chars().collect();
+    let num_stacks = (line1.len() + 1) / 4;
+    let mut crates: Vec<Vec<char>> = vec![vec![]; num_stacks];
+    
+    for i in 0..num_stacks {
+        let c = line1[4*i + 1];
+        if c.is_ascii_alphabetic() {
+            crates[i].insert(0, c);
+        }
+    }
+
+    loop {
+        let line: Vec<char> = lines.next().unwrap().unwrap().chars().collect();
+        if (line.len() + 1) / 4 < num_stacks { break; }
+
+        for i in 0..num_stacks {
+            let c = line[4*i + 1];
+            if c.is_ascii_alphabetic() {
+                crates[i].insert(0, c);
+            }
+        }
+    }
+
+    let move_crate = &mut |from: usize, to: usize| {
+        let c = crates[from - 1].pop().unwrap();
+        crates[to - 1].push(c);
+    };
+
+    loop {
+        let line = match lines.next() {
+            Some(l) => l.unwrap(),
+            None => break,
+        };
+        
+        let instructions: Vec<usize> = line
+            .split(' ')
+            .filter(|s| *s != "move" && *s != "from" && *s != "to")
+            .map(|s| s.parse().unwrap())
+            .collect();
+
+        if let [count, from, to] = instructions.as_slice() {
+            for _ in 0..*count {
+                move_crate(*from, *to);
+            }
+        }
+    }
+
+    let mut top = String::new();
+    for stack in crates {
+        top.push(*stack.last().unwrap());
+    }
+
+    return top;
 }
 
 fn get_reader(path: &str) -> BufReader<File> {
