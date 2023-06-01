@@ -11,47 +11,30 @@ fn main() {
     println!("6: {}", naloga6("input6.txt"));
 }
 
-fn naloga1(path: &str) -> i32 {
-    let mut cur_calories = 0;
-    let mut max_calories = [0, 0, 0];
+fn naloga1(path: &str) -> u32 {
+    let mut cals = 0;
+    let mut max_cals = [0, 0, 0];
 
-    for line in get_reader(path).lines() {
-        let line = line.unwrap();
+    let lines: Vec<String> = get_reader(path).lines()
+        .map(|line| line.unwrap())
+        .collect();
 
-        if line.len() > 0 {
-            cur_calories += line.parse::<i32>().unwrap();
+    for (i, line) in lines.iter().enumerate() {
+        if line.len() > 0 && i < lines.len() {
+            cals += line.parse::<u32>().unwrap();
         }
         else {
-            if cur_calories > max_calories[0] {
-                max_calories[2] = max_calories[1];
-                max_calories[1] = max_calories[0];
-                max_calories[0] = cur_calories;
-            }
-            else if cur_calories > max_calories[1] {
-                max_calories[2] = max_calories[1];
-                max_calories[1] = cur_calories;
-            }
-            else if cur_calories > max_calories[2] {
-                max_calories[2] = cur_calories;
-            }
-            cur_calories = 0;
+            max_cals = match max_cals {
+                [m1, m2,  _] if cals > m1 => [cals, m1, m2],
+                [m1, m2,  _] if cals > m2 => [m1, cals, m2],
+                [m1, m2, m3] if cals > m3 => [m1, m2, cals],
+                _ => max_cals,
+            };
+            cals = 0;
         }
     }
 
-    if cur_calories > max_calories[0] {
-        max_calories[2] = max_calories[1];
-        max_calories[1] = max_calories[0];
-        max_calories[0] = cur_calories;
-    }
-    else if cur_calories > max_calories[1] {
-        max_calories[2] = max_calories[1];
-        max_calories[1] = cur_calories;
-    }
-    else if cur_calories > max_calories[2] {
-        max_calories[2] = cur_calories;
-    }
-
-    return max_calories.iter().sum();
+    max_cals.iter().sum()
 }
 
 fn naloga2(path: &str) -> i32 {
@@ -69,17 +52,18 @@ fn naloga2(path: &str) -> i32 {
         };
     }
 
-    return score;
+    score
 }
 
 fn naloga3(path: &str) -> usize {
-    let mut sum: usize = 0;
-    let mut lines = [HashSet::<u8>::new(), HashSet::<u8>::new(), HashSet::<u8>::new()];
+    let mut sum = 0;
+    let mut lines = [HashSet::<u8>::new(), HashSet::new(), HashSet::new()];
     
     for (i, line) in get_reader(path).lines().enumerate() {
         let items = line.unwrap().into_bytes();
-        let len = items.len();
-        if len == 0 { continue }
+        if items.is_empty() {
+            continue
+        }
 
         lines[i % 3].clear();
         lines[i % 3].extend(items.iter());
@@ -93,47 +77,45 @@ fn naloga3(path: &str) -> usize {
         }
     }
     
-    return sum;
+    sum
 }
 
 fn naloga4(path: &str) -> usize {
-    let mut sum: usize = 0;
-
-    let overlap = |a: u32, b: u32, c: u32, d: u32| {
-        // partial overlap
-        if a <= c && b <= d && b >= c { return true };
-        if c <= a && d <= b && d >= a { return true };
-
-        // complete overlap
-        if a <= c && b >= d { return true };
-        if c <= a && d >= b { return true };
-
-        // no overlap
-        return false;
-    };
+    let mut sum = 0;
 
     for line in get_reader(path).lines() {
         let line = line.unwrap();
-        if line.len() == 0 { break }
+        if line.is_empty() {
+            break
+        }
 
-        let sections = line.split(|c| c == ',' || c == '-').collect::<Vec<&str>>();
-        let (first_start, first_end, second_start, second_end) = (sections[0].parse::<u32>().unwrap(), 
-                                                                  sections[1].parse::<u32>().unwrap(), 
-                                                                  sections[2].parse::<u32>().unwrap(), 
-                                                                  sections[3].parse::<u32>().unwrap());
+        let nums: Vec<usize> = line
+            .split(|c| c == ',' || c == '-')
+            .map(|s| s.parse().unwrap())
+            .collect();
 
-        sum += if overlap(first_start, first_end, second_start, second_end) { 1 } else { 0 };
+        sum += match nums.as_slice() {
+            // partial overlap
+            [a, b, c, d] if a <= c && b <= d && b >= c => 1,
+            [a, b, c, d] if c <= a && d <= b && d >= a => 1,
+            // complete overlap
+            [a, b, c, d] if a <= c && b >= d => 1,
+            [a, b, c, d] if c <= a && d >= b => 1,
+            [_, _, _, _] => 0,
+            _ => panic!("Invalid input!")
+        };
     }
 
-    return sum;
+    sum
 }
 
 fn naloga5(path: &str) -> String {
     let mut lines = get_reader(path).lines();
-    let line1: Vec<char> = lines.next().unwrap().unwrap().chars().collect();
+    let line1: Vec<u8> = lines.next().unwrap().unwrap().into_bytes();
     let num_stacks = (line1.len() + 1) / 4;
-    let mut crates: Vec<Vec<char>> = vec![vec![]; num_stacks];
+    let mut crates: Vec<Vec<u8>> = vec![vec![]; num_stacks];
     
+    // read initial state
     for i in 0..num_stacks {
         let c = line1[4*i + 1];
         if c.is_ascii_alphabetic() {
@@ -142,8 +124,10 @@ fn naloga5(path: &str) -> String {
     }
 
     loop {
-        let line: Vec<char> = lines.next().unwrap().unwrap().chars().collect();
-        if (line.len() + 1) / 4 < num_stacks { break; }
+        let line: Vec<u8> = lines.next().unwrap().unwrap().into_bytes();
+        if line.is_empty() {
+            break;
+        }
 
         for i in 0..num_stacks {
             let c = line[4*i + 1];
@@ -153,14 +137,7 @@ fn naloga5(path: &str) -> String {
         }
     }
 
-    let move_crates = &mut |from: usize, to: usize, count: usize| {
-        let i = crates[from - 1].len() - count;
-        for _ in 0..count {
-            let c = crates[from - 1].remove(i);
-            crates[to - 1].push(c);
-        }
-    };
-
+    // read delta and advance state
     loop {
         let line = match lines.next() {
             Some(l) => l.unwrap(),
@@ -173,27 +150,33 @@ fn naloga5(path: &str) -> String {
             .map(|s| s.parse().unwrap())
             .collect();
 
-        if let [count, from, to] = instructions.as_slice() {
-            move_crates(*from, *to, *count);
+        let (count, from, to) = (instructions[0], instructions[1] - 1, instructions[2] - 1);
+
+        let i = crates[from].len() - count;
+        for _ in 0..count {
+            let c = crates[from].remove(i);
+            crates[to].push(c);
         }
     }
 
-    let mut top = String::new();
-    for stack in crates {
-        top.push(*stack.last().unwrap());
-    }
+    let top = crates.iter()
+        .map(|stack| *stack.last().unwrap())
+        .map(|byte| char::from_u32(byte as u32).unwrap())
+        .collect();
 
-    return top;
+    top
 }
 
 fn naloga6(path: &str) -> usize {
-    let mut buffer: Vec<u8> = Vec::new();
+    let mut buffer = Vec::new();
     get_reader(path).read_to_end(&mut buffer).unwrap();
 
     let distinct = |start: usize, end: usize| {
         for i in start..end {
             for j in i+1..end {
-                if buffer[i] == buffer[j] { return false; }
+                if buffer[i] == buffer[j] {
+                    return false;
+                }
             }
         }
         return true;
@@ -204,6 +187,7 @@ fn naloga6(path: &str) -> usize {
             return i;
         }
     }
+
     return 0;
 }
 
